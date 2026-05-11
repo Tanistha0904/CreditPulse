@@ -1,0 +1,630 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>CreditPulse — AI Collections Agent</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=Space+Mono:wght@400;700&family=Inter:wght@300;400;500&display=swap" rel="stylesheet"/>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --bg:#080c14;--surface:#0e1520;--surface2:#131d2e;--border:#1e2d45;
+  --accent:#00d4ff;--accent2:#7c3aed;--warn:#f59e0b;--danger:#ef4444;--success:#10b981;
+  --text:#e2e8f0;--text2:#8899aa;--text3:#4a6080;
+  --font-display:'Syne',sans-serif;--font-mono:'Space Mono',monospace;--font-body:'Inter',sans-serif;
+}
+html,body{height:100%;background:var(--bg);color:var(--text);font-family:var(--font-body)}
+
+/* GRID LAYOUT */
+.app{display:grid;grid-template-columns:240px 1fr;grid-template-rows:auto 1fr;min-height:100vh}
+.topbar{grid-column:1/-1;background:var(--surface);border-bottom:1px solid var(--border);
+  display:flex;align-items:center;justify-content:space-between;padding:0 28px;height:60px;position:sticky;top:0;z-index:100}
+.logo{font-family:var(--font-display);font-size:1.25rem;font-weight:800;letter-spacing:-0.02em}
+.logo span{color:var(--accent)}
+.topbar-right{display:flex;align-items:center;gap:16px}
+.dry-run-toggle{display:flex;align-items:center;gap:8px;font-size:.8rem;color:var(--text2)}
+.toggle{width:40px;height:22px;background:var(--accent);border-radius:11px;position:relative;cursor:pointer;transition:.2s}
+.toggle.off{background:var(--border)}
+.toggle::after{content:'';position:absolute;width:16px;height:16px;background:#fff;border-radius:50%;top:3px;left:3px;transition:.2s}
+.toggle.off::after{left:21px}
+.ai-badge{background:linear-gradient(135deg,var(--accent2),var(--accent));padding:4px 10px;border-radius:20px;font-size:.7rem;font-weight:600;letter-spacing:.05em}
+
+/* SIDEBAR */
+.sidebar{background:var(--surface);border-right:1px solid var(--border);padding:24px 0}
+.nav-item{padding:10px 24px;cursor:pointer;font-size:.85rem;color:var(--text2);display:flex;align-items:center;gap:10px;transition:.15s;border-left:2px solid transparent}
+.nav-item:hover{color:var(--text);background:var(--surface2)}
+.nav-item.active{color:var(--accent);border-left-color:var(--accent);background:rgba(0,212,255,.05)}
+.nav-section{padding:16px 24px 8px;font-size:.65rem;font-weight:700;letter-spacing:.1em;color:var(--text3);text-transform:uppercase}
+.sidebar-footer{padding:16px 24px;margin-top:auto;position:absolute;bottom:0;width:240px}
+.sidebar-version{font-size:.7rem;color:var(--text3);font-family:var(--font-mono)}
+
+/* MAIN */
+.main{overflow-y:auto;padding:28px}
+.page{display:none}
+.page.active{display:block}
+
+/* STATS ROW */
+.stats-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:16px;margin-bottom:28px}
+.stat-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:20px;position:relative;overflow:hidden}
+.stat-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:var(--accent-color,var(--accent))}
+.stat-label{font-size:.7rem;color:var(--text2);text-transform:uppercase;letter-spacing:.08em;margin-bottom:8px}
+.stat-value{font-family:var(--font-display);font-size:1.8rem;font-weight:700;line-height:1}
+.stat-sub{font-size:.72rem;color:var(--text2);margin-top:4px}
+
+/* SECTION HEADERS */
+.section-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px}
+.section-title{font-family:var(--font-display);font-size:1.1rem;font-weight:700}
+.section-title span{color:var(--accent)}
+
+/* INVOICE TABLE */
+.table-wrap{background:var(--surface);border:1px solid var(--border);border-radius:12px;overflow:hidden}
+table{width:100%;border-collapse:collapse}
+thead th{background:var(--surface2);padding:12px 16px;text-align:left;font-size:.7rem;text-transform:uppercase;letter-spacing:.08em;color:var(--text2);font-weight:600;white-space:nowrap}
+tbody tr{border-top:1px solid var(--border);transition:.15s}
+tbody tr:hover{background:var(--surface2)}
+td{padding:14px 16px;font-size:.85rem;vertical-align:middle}
+.invoice-no{font-family:var(--font-mono);font-size:.75rem;color:var(--accent)}
+.client-name{font-weight:500}
+.amount{font-family:var(--font-mono);font-weight:700}
+.urgency-badge{display:inline-flex;align-items:center;gap:5px;padding:3px 10px;border-radius:20px;font-size:.72rem;font-weight:600}
+.u1{background:rgba(16,185,129,.15);color:#10b981}
+.u2{background:rgba(245,158,11,.15);color:#f59e0b}
+.u3{background:rgba(249,115,22,.15);color:#f97316}
+.u4{background:rgba(239,68,68,.15);color:#ef4444}
+.u5{background:rgba(124,58,237,.15);color:#7c3aed}
+
+/* BUTTONS */
+.btn{padding:8px 16px;border:none;border-radius:8px;cursor:pointer;font-size:.8rem;font-weight:600;transition:.15s;display:inline-flex;align-items:center;gap:6px}
+.btn-primary{background:var(--accent);color:#000}
+.btn-primary:hover{background:#00b8d9}
+.btn-ghost{background:transparent;color:var(--text2);border:1px solid var(--border)}
+.btn-ghost:hover{border-color:var(--accent);color:var(--accent)}
+.btn-danger{background:rgba(239,68,68,.1);color:#ef4444;border:1px solid rgba(239,68,68,.3)}
+.btn-success{background:rgba(16,185,129,.15);color:#10b981;border:1px solid rgba(16,185,129,.3)}
+.btn-sm{padding:5px 10px;font-size:.72rem}
+
+/* MODAL */
+.modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:200;display:none;align-items:center;justify-content:center;backdrop-filter:blur(4px)}
+.modal-bg.open{display:flex}
+.modal{background:var(--surface);border:1px solid var(--border);border-radius:16px;width:680px;max-width:95vw;max-height:88vh;overflow-y:auto;animation:slideUp .2s ease}
+@keyframes slideUp{from{transform:translateY(20px);opacity:0}to{transform:none;opacity:1}}
+.modal-header{padding:24px 28px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;position:sticky;top:0;background:var(--surface);z-index:1}
+.modal-title{font-family:var(--font-display);font-size:1.1rem;font-weight:700}
+.modal-close{background:none;border:none;color:var(--text2);cursor:pointer;font-size:1.3rem;padding:4px}
+.modal-body{padding:28px}
+.email-meta{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:20px}
+.meta-item{background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:12px}
+.meta-label{font-size:.65rem;text-transform:uppercase;letter-spacing:.08em;color:var(--text3);margin-bottom:4px}
+.meta-value{font-size:.85rem;font-weight:500}
+.email-subject{background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:14px;margin-bottom:16px;font-family:var(--font-mono);font-size:.8rem;color:var(--accent)}
+.email-body{background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:16px;white-space:pre-wrap;font-size:.85rem;line-height:1.7;color:var(--text)}
+.sentiment-bar{display:flex;align-items:center;gap:12px;margin:16px 0}
+.sentiment-track{flex:1;height:6px;background:var(--border);border-radius:3px;overflow:hidden}
+.sentiment-fill{height:100%;border-radius:3px;background:linear-gradient(90deg,#ef4444,#f59e0b,#10b981)}
+.sentiment-label{font-size:.72rem;color:var(--text2);white-space:nowrap}
+.modal-footer{padding:20px 28px;border-top:1px solid var(--border);display:flex;gap:10px;justify-content:flex-end;position:sticky;bottom:0;background:var(--surface)}
+
+/* AI INSIGHTS CARD */
+.insights-card{background:linear-gradient(135deg,rgba(124,58,237,.1),rgba(0,212,255,.05));
+  border:1px solid rgba(124,58,237,.3);border-radius:12px;padding:20px;margin-bottom:28px}
+.insights-header{display:flex;align-items:center;gap:10px;margin-bottom:16px}
+.insights-icon{width:32px;height:32px;background:linear-gradient(135deg,var(--accent2),var(--accent));
+  border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:1rem}
+.insights-title{font-family:var(--font-display);font-size:.95rem;font-weight:700}
+.insights-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+.insight-item{background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.07);border-radius:8px;padding:14px}
+.insight-key{font-size:.65rem;text-transform:uppercase;letter-spacing:.08em;color:var(--text3);margin-bottom:6px}
+.insight-val{font-size:.9rem;font-weight:600}
+.risk-low{color:#10b981}
+.risk-medium{color:#f59e0b}
+.risk-high{color:#f97316}
+.risk-critical{color:#ef4444}
+
+/* AUDIT LOG */
+.log-item{padding:14px 16px;border-top:1px solid var(--border);display:grid;grid-template-columns:auto 1fr auto;gap:12px;align-items:start;font-size:.8rem}
+.log-time{font-family:var(--font-mono);font-size:.7rem;color:var(--text3);white-space:nowrap}
+.log-subject{color:var(--text);font-weight:500;margin-bottom:2px}
+.log-meta{color:var(--text2);font-size:.72rem}
+.log-status{padding:2px 8px;border-radius:4px;font-size:.68rem;font-weight:600;white-space:nowrap}
+.status-dry{background:rgba(245,158,11,.15);color:#f59e0b}
+.status-sent{background:rgba(16,185,129,.15);color:#10b981}
+
+/* UPLOAD ZONE */
+.upload-zone{border:2px dashed var(--border);border-radius:12px;padding:40px;text-align:center;cursor:pointer;transition:.2s;margin-bottom:20px}
+.upload-zone:hover{border-color:var(--accent);background:rgba(0,212,255,.03)}
+.upload-icon{font-size:2.5rem;margin-bottom:12px}
+.upload-label{font-size:.9rem;color:var(--text2)}
+.upload-sub{font-size:.75rem;color:var(--text3);margin-top:4px}
+
+/* TOAST */
+.toast-container{position:fixed;bottom:24px;right:24px;z-index:999;display:flex;flex-direction:column;gap:8px}
+.toast{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:12px 18px;
+  font-size:.82rem;display:flex;align-items:center;gap:10px;animation:slideUp .2s ease;
+  box-shadow:0 8px 24px rgba(0,0,0,.4);min-width:260px}
+.toast.success{border-left:3px solid var(--success)}
+.toast.error{border-left:3px solid var(--danger)}
+.toast.info{border-left:3px solid var(--accent)}
+
+/* LOADER */
+.spinner{width:18px;height:18px;border:2px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin .6s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.loading-overlay{position:absolute;inset:0;background:rgba(8,12,20,.7);z-index:10;display:flex;align-items:center;justify-content:center;border-radius:inherit}
+
+/* SCROLLBAR */
+::-webkit-scrollbar{width:4px}
+::-webkit-scrollbar-track{background:var(--surface)}
+::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px}
+
+/* ESCALATION ALERT */
+.escalation-banner{background:rgba(124,58,237,.1);border:1px solid rgba(124,58,237,.4);
+  border-radius:10px;padding:16px 20px;display:flex;align-items:center;gap:12px;margin-bottom:20px}
+.esc-icon{font-size:1.3rem}
+.esc-text{font-size:.85rem}
+.esc-text strong{color:#a78bfa}
+
+.empty-state{text-align:center;padding:60px 20px;color:var(--text2)}
+.empty-icon{font-size:3rem;margin-bottom:12px}
+
+/* SAMPLE CSV HINT */
+.hint-box{background:rgba(0,212,255,.05);border:1px solid rgba(0,212,255,.2);border-radius:8px;padding:14px;margin-bottom:16px;font-size:.78rem;color:var(--text2)}
+.hint-box code{font-family:var(--font-mono);color:var(--accent);font-size:.72rem}
+</style>
+</head>
+<body>
+
+<div class="app">
+  <!-- TOPBAR -->
+  <header class="topbar">
+    <div class="logo">Credit<span>Pulse</span></div>
+    <div class="topbar-right">
+      <span class="ai-badge">⚡ AI Powered</span>
+      <div class="dry-run-toggle">
+        <span>Dry Run</span>
+        <div class="toggle" id="dryRunToggle" onclick="toggleDryRun()"></div>
+        <span id="dryRunLabel" style="color:var(--accent)">ON</span>
+      </div>
+    </div>
+  </header>
+
+  <!-- SIDEBAR -->
+  <aside class="sidebar">
+    <nav>
+      <div class="nav-section">Dashboard</div>
+      <div class="nav-item active" onclick="showPage('dashboard',this)">📊 Overview</div>
+      <div class="nav-item" onclick="showPage('invoices',this)">🧾 Invoices</div>
+      <div class="nav-item" onclick="showPage('audit',this)">📋 Audit Log</div>
+
+      <div class="nav-section" style="margin-top:16px">Actions</div>
+      <div class="nav-item" onclick="showPage('upload',this)">📤 Upload CSV</div>
+      <div class="nav-item" onclick="runBulkProcess()">⚡ Bulk Process</div>
+      <div class="nav-item" onclick="exportAudit()">⬇ Export Log</div>
+    </nav>
+    <div class="sidebar-footer">
+      <div class="sidebar-version">v1.0.0 · Internship Project</div>
+    </div>
+  </aside>
+
+  <!-- MAIN -->
+  <main class="main">
+
+    <!-- DASHBOARD PAGE -->
+    <div id="page-dashboard" class="page active">
+      <div class="section-header" style="margin-bottom:24px">
+        <div>
+          <div class="section-title">Receivables <span>Overview</span></div>
+          <div style="font-size:.8rem;color:var(--text2);margin-top:3px">Live portfolio health · auto-refreshes every 60s</div>
+        </div>
+        <button class="btn btn-primary" onclick="loadAll()">↻ Refresh</button>
+      </div>
+
+      <div class="stats-grid" id="statsGrid">
+        <div class="stat-card" style="--accent-color:var(--accent)">
+          <div class="stat-label">Total Invoices</div>
+          <div class="stat-value" id="statTotal">—</div>
+          <div class="stat-sub">in system</div>
+        </div>
+        <div class="stat-card" style="--accent-color:var(--warn)">
+          <div class="stat-label">Pending</div>
+          <div class="stat-value" id="statPending">—</div>
+          <div class="stat-sub">awaiting payment</div>
+        </div>
+        <div class="stat-card" style="--accent-color:var(--danger)">
+          <div class="stat-label">Escalated</div>
+          <div class="stat-value" id="statEscalated">—</div>
+          <div class="stat-sub">legal review</div>
+        </div>
+        <div class="stat-card" style="--accent-color:var(--accent2)">
+          <div class="stat-label">Amount at Risk</div>
+          <div class="stat-value" id="statAmount">—</div>
+          <div class="stat-sub">INR pending</div>
+        </div>
+        <div class="stat-card" style="--accent-color:var(--success)">
+          <div class="stat-label">Emails Sent</div>
+          <div class="stat-value" id="statEmails">—</div>
+          <div class="stat-sub">total follow-ups</div>
+        </div>
+      </div>
+
+      <!-- AI INSIGHTS -->
+      <div class="insights-card" id="insightsCard">
+        <div class="insights-header">
+          <div class="insights-icon">🤖</div>
+          <div>
+            <div class="insights-title">AI Portfolio Analysis</div>
+            <div style="font-size:.72rem;color:var(--text2)">Powered by Claude Sonnet</div>
+          </div>
+          <button class="btn btn-ghost btn-sm" onclick="loadInsights()" style="margin-left:auto">Analyze</button>
+        </div>
+        <div class="insights-grid" id="insightsGrid">
+          <div class="insight-item"><div class="insight-key">Status</div><div class="insight-val" style="color:var(--text2)">Click Analyze →</div></div>
+          <div class="insight-item"><div class="insight-key">Collection Prob.</div><div class="insight-val" style="color:var(--text2)">—</div></div>
+          <div class="insight-item"><div class="insight-key">Recommendation</div><div class="insight-val" style="color:var(--text2)">—</div></div>
+        </div>
+        <div id="insightsFull" style="margin-top:12px;font-size:.82rem;color:var(--text2);display:none"></div>
+      </div>
+
+      <!-- STAGE BREAKDOWN -->
+      <div class="table-wrap">
+        <div style="padding:16px 20px;border-bottom:1px solid var(--border)">
+          <div class="section-title" style="font-size:.9rem">Stage <span>Breakdown</span></div>
+        </div>
+        <div style="padding:20px;display:grid;grid-template-columns:repeat(4,1fr);gap:12px" id="stageBreakdown">
+          <div class="insight-item"><div class="insight-key">Stage 1 · Friendly</div><div class="insight-val" id="s1">—</div></div>
+          <div class="insight-item"><div class="insight-key">Stage 2 · Firm</div><div class="insight-val" id="s2">—</div></div>
+          <div class="insight-item"><div class="insight-key">Stage 3 · Serious</div><div class="insight-val" id="s3">—</div></div>
+          <div class="insight-item"><div class="insight-key">Stage 4 · Urgent</div><div class="insight-val" id="s4">—</div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- INVOICES PAGE -->
+    <div id="page-invoices" class="page">
+      <div class="section-header">
+        <div class="section-title">Invoice <span>Queue</span></div>
+        <div style="display:flex;gap:10px">
+          <button class="btn btn-ghost" onclick="runBulkProcess()">⚡ Bulk Process All</button>
+        </div>
+      </div>
+      <div class="table-wrap" id="invoiceTableWrap">
+        <div style="position:relative;min-height:200px" id="invoiceLoading">
+          <div style="padding:40px;text-align:center;color:var(--text2)">Loading…</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- AUDIT LOG PAGE -->
+    <div id="page-audit" class="page">
+      <div class="section-header">
+        <div class="section-title">Audit <span>Trail</span></div>
+        <button class="btn btn-ghost" onclick="exportAudit()">⬇ Export CSV</button>
+      </div>
+      <div class="table-wrap" id="auditContainer">
+        <div style="padding:40px;text-align:center;color:var(--text2)">Loading…</div>
+      </div>
+    </div>
+
+    <!-- UPLOAD PAGE -->
+    <div id="page-upload" class="page">
+      <div class="section-title" style="margin-bottom:24px">Upload <span>CSV</span></div>
+
+      <div class="hint-box">
+        <strong>Expected CSV columns:</strong><br>
+        <code>invoice_no, client_name, contact_email, amount, currency, due_date, follow_up_count, payment_link</code><br>
+        <br>Date format: <code>YYYY-MM-DD</code> · Currency: <code>INR</code> or <code>USD</code> · follow_up_count starts at 0
+      </div>
+
+      <div class="upload-zone" id="uploadZone" onclick="document.getElementById('csvInput').click()">
+        <div class="upload-icon">📂</div>
+        <div class="upload-label">Click or drag your CSV file here</div>
+        <div class="upload-sub">Supports .csv files up to 10MB</div>
+      </div>
+      <input type="file" id="csvInput" accept=".csv" style="display:none" onchange="uploadCSV(this)"/>
+
+      <button class="btn btn-ghost" onclick="downloadSampleCSV()" style="margin-top:8px">⬇ Download Sample CSV</button>
+    </div>
+
+  </main>
+</div>
+
+<!-- EMAIL MODAL -->
+<div class="modal-bg" id="emailModal">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title" id="modalTitle">AI-Generated Email</div>
+      <button class="modal-close" onclick="closeModal()">✕</button>
+    </div>
+    <div class="modal-body" id="modalBody">
+      <div style="text-align:center;padding:40px">
+        <div class="spinner" style="margin:0 auto 12px"></div>
+        <div style="color:var(--text2);font-size:.85rem">Claude is writing your email…</div>
+      </div>
+    </div>
+    <div class="modal-footer" id="modalFooter" style="display:none">
+      <button class="btn btn-ghost" onclick="closeModal()">Cancel</button>
+      <button class="btn btn-primary" id="sendBtn" onclick="sendEmail()">📤 Send (Dry Run)</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast-container" id="toastContainer"></div>
+
+<script>
+let dryRun = true;
+let currentEmailData = null;
+let currentInvoiceNo = null;
+
+// ── NAV ──────────────────────────────────────────────────────────────────────
+function showPage(name, el) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  document.getElementById('page-'+name).classList.add('active');
+  if (el) el.classList.add('active');
+  if (name === 'invoices') loadInvoices();
+  if (name === 'audit') loadAuditLog();
+}
+
+function toggleDryRun() {
+  dryRun = !dryRun;
+  const t = document.getElementById('dryRunToggle');
+  const l = document.getElementById('dryRunLabel');
+  t.classList.toggle('off', !dryRun);
+  l.textContent = dryRun ? 'ON' : 'OFF';
+  l.style.color = dryRun ? 'var(--accent)' : 'var(--danger)';
+  document.getElementById('sendBtn').textContent = dryRun ? '📤 Send (Dry Run)' : '📤 Send Email';
+  toast(dryRun ? 'Dry run mode ON — no real emails sent' : '⚠ Live mode — emails will be sent!', dryRun ? 'info' : 'error');
+}
+
+// ── DATA LOAD ─────────────────────────────────────────────────────────────────
+async function loadAll() {
+  const [stats] = await Promise.all([fetch('/api/stats').then(r=>r.json())]);
+  document.getElementById('statTotal').textContent = stats.total;
+  document.getElementById('statPending').textContent = stats.pending;
+  document.getElementById('statEscalated').textContent = stats.escalated;
+  const amt = (stats.total_amount/100000).toFixed(1);
+  document.getElementById('statAmount').textContent = '₹'+amt+'L';
+  document.getElementById('statEmails').textContent = stats.emails_sent;
+  document.getElementById('s1').textContent = stats.stage_breakdown[1] || 0;
+  document.getElementById('s2').textContent = stats.stage_breakdown[2] || 0;
+  document.getElementById('s3').textContent = stats.stage_breakdown[3] || 0;
+  document.getElementById('s4').textContent = stats.stage_breakdown[4] || 0;
+}
+
+async function loadInsights() {
+  const grid = document.getElementById('insightsGrid');
+  grid.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:12px;color:var(--text2);font-size:.82rem"><div class="spinner" style="margin:0 auto 8px"></div>Claude is analyzing your portfolio…</div>';
+  try {
+    const data = await fetch('/api/ai-insights').then(r=>r.json());
+    const riskClass = 'risk-'+data.risk_level.toLowerCase();
+    grid.innerHTML = `
+      <div class="insight-item">
+        <div class="insight-key">Risk Level</div>
+        <div class="insight-val ${riskClass}">${data.risk_level}</div>
+      </div>
+      <div class="insight-item">
+        <div class="insight-key">Collection Prob.</div>
+        <div class="insight-val">${data.collection_probability}</div>
+      </div>
+      <div class="insight-item">
+        <div class="insight-key">Key Insight</div>
+        <div class="insight-val" style="font-size:.78rem;font-weight:400">${data.key_insight}</div>
+      </div>`;
+    document.getElementById('insightsFull').style.display = 'block';
+    document.getElementById('insightsFull').textContent = '💡 ' + data.recommended_action;
+  } catch(e) {
+    grid.innerHTML = '<div style="grid-column:1/-1;color:var(--danger);font-size:.82rem;padding:8px">Failed to load insights. Check API key.</div>';
+  }
+}
+
+async function loadInvoices() {
+  const wrap = document.getElementById('invoiceTableWrap');
+  wrap.innerHTML = '<div style="padding:40px;text-align:center;color:var(--text2)"><div class="spinner" style="margin:0 auto 12px"></div>Loading invoices…</div>';
+  const data = await fetch('/api/invoices').then(r=>r.json());
+  if (!data.length) {
+    wrap.innerHTML = '<div class="empty-state"><div class="empty-icon">📭</div><div>No invoices found</div></div>';
+    return;
+  }
+
+  const rows = data.map(inv => {
+    const urgClass = `u${inv.urgency}`;
+    const daysStyle = inv.days_overdue > 20 ? 'color:var(--danger)' : inv.days_overdue > 10 ? 'color:var(--warn)' : '';
+    return `<tr>
+      <td><span class="invoice-no">${inv.invoice_no}</span></td>
+      <td><div class="client-name">${inv.client_name}</div><div style="font-size:.72rem;color:var(--text3)">${inv.contact_email}</div></td>
+      <td><div class="amount">₹${Number(inv.amount).toLocaleString('en-IN')}</div></td>
+      <td><span style="${daysStyle};font-weight:600">${inv.days_overdue}d</span></td>
+      <td><span class="urgency-badge ${urgClass}">${inv.stage}</span></td>
+      <td>${inv.follow_up_count}</td>
+      <td style="text-align:right">
+        ${inv.urgency === 5
+          ? `<span class="urgency-badge u5">🔴 Escalated</span>`
+          : `<button class="btn btn-ghost btn-sm" onclick="openEmailModal('${inv.invoice_no}')">✉ Generate</button>`
+        }
+      </td>
+    </tr>`;
+  }).join('');
+
+  wrap.innerHTML = `<table>
+    <thead><tr>
+      <th>Invoice</th><th>Client</th><th>Amount</th><th>Overdue</th><th>Stage</th><th>Follow-ups</th><th style="text-align:right">Action</th>
+    </tr></thead>
+    <tbody>${rows}</tbody>
+  </table>`;
+}
+
+async function loadAuditLog() {
+  const container = document.getElementById('auditContainer');
+  const data = await fetch('/api/audit-log').then(r=>r.json());
+  if (!data.length) {
+    container.innerHTML = '<div class="empty-state"><div class="empty-icon">📋</div><div>No emails sent yet</div></div>';
+    return;
+  }
+  const items = data.map(log => {
+    const dt = new Date(log.timestamp).toLocaleString('en-IN',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'});
+    const statusClass = log.dry_run ? 'status-dry' : 'status-sent';
+    const statusLabel = log.dry_run ? 'DRY RUN' : 'SENT';
+    const sentiment = Math.round((log.ai_sentiment_score||0.5)*100);
+    return `<div class="log-item">
+      <div class="log-time">${dt}</div>
+      <div>
+        <div class="log-subject">${log.subject}</div>
+        <div class="log-meta">${log.invoice_no} · ${log.client_name} · ${log.tone} · AI Sentiment: ${sentiment}%</div>
+      </div>
+      <span class="log-status ${statusClass}">${statusLabel}</span>
+    </div>`;
+  }).join('');
+  container.innerHTML = `<div>${items}</div>`;
+}
+
+// ── EMAIL MODAL ───────────────────────────────────────────────────────────────
+async function openEmailModal(invoiceNo) {
+  currentInvoiceNo = invoiceNo;
+  currentEmailData = null;
+  document.getElementById('emailModal').classList.add('open');
+  document.getElementById('modalFooter').style.display = 'none';
+  document.getElementById('modalBody').innerHTML = `<div style="text-align:center;padding:50px">
+    <div class="spinner" style="margin:0 auto 14px"></div>
+    <div style="color:var(--text2);font-size:.85rem">Claude is crafting your email…</div>
+  </div>`;
+
+  try {
+    const data = await fetch('/api/generate-email', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({invoice_no: invoiceNo})
+    }).then(r=>r.json());
+
+    if (data.escalated) {
+      document.getElementById('modalBody').innerHTML = `
+        <div class="escalation-banner">
+          <div class="esc-icon">🔴</div>
+          <div class="esc-text"><strong>Legal Escalation Required</strong><br>${data.message}</div>
+        </div>`;
+      return;
+    }
+
+    currentEmailData = data;
+    const inv = data.invoice;
+    const sentiment = Math.round((data.sentiment_score||0.5)*100);
+    const sentimentColor = sentiment > 66 ? 'var(--success)' : sentiment > 33 ? 'var(--warn)' : 'var(--danger)';
+
+    document.getElementById('modalTitle').textContent = `${data.stage} — ${data.tone}`;
+    document.getElementById('modalBody').innerHTML = `
+      <div class="email-meta">
+        <div class="meta-item"><div class="meta-label">Client</div><div class="meta-value">${inv.client_name}</div></div>
+        <div class="meta-item"><div class="meta-label">Invoice</div><div class="meta-value" style="font-family:var(--font-mono);color:var(--accent)">${inv.invoice_no}</div></div>
+        <div class="meta-item"><div class="meta-label">Amount</div><div class="meta-value">₹${Number(inv.amount).toLocaleString('en-IN')}</div></div>
+        <div class="meta-item"><div class="meta-label">Days Overdue</div><div class="meta-value" style="color:var(--danger)">${inv.days_overdue} days</div></div>
+      </div>
+      <div class="sentiment-bar">
+        <span class="sentiment-label">Tone: Aggressive</span>
+        <div class="sentiment-track"><div class="sentiment-fill" style="width:${sentiment}%"></div></div>
+        <span class="sentiment-label">Friendly</span>
+        <span style="font-family:var(--font-mono);font-size:.72rem;color:${sentimentColor};margin-left:4px">${sentiment}%</span>
+      </div>
+      <div class="email-subject">📧 ${data.subject}</div>
+      <div class="email-body">${data.body}</div>
+    `;
+    document.getElementById('modalFooter').style.display = 'flex';
+    document.getElementById('sendBtn').textContent = dryRun ? '📤 Send (Dry Run)' : '📤 Send Email';
+  } catch(e) {
+    document.getElementById('modalBody').innerHTML = '<div style="color:var(--danger);padding:20px">Failed to generate email. Check your API key.</div>';
+  }
+}
+
+async function sendEmail() {
+  if (!currentEmailData || !currentInvoiceNo) return;
+  const btn = document.getElementById('sendBtn');
+  btn.disabled = true;
+  btn.innerHTML = '<div class="spinner"></div> Sending…';
+
+  await fetch('/api/send-email', {
+    method:'POST', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({
+      invoice_no: currentInvoiceNo,
+      subject: currentEmailData.subject,
+      body: currentEmailData.body,
+      tone: currentEmailData.tone,
+      stage: currentEmailData.stage,
+      sentiment_score: currentEmailData.sentiment_score,
+      dry_run: dryRun
+    })
+  });
+
+  closeModal();
+  toast(dryRun ? '✅ Email logged (dry run)' : '✅ Email sent successfully!', 'success');
+  loadAll();
+}
+
+function closeModal() {
+  document.getElementById('emailModal').classList.remove('open');
+}
+
+// ── BULK PROCESS ──────────────────────────────────────────────────────────────
+async function runBulkProcess() {
+  toast('⚡ Processing all pending invoices…', 'info');
+  try {
+    const data = await fetch('/api/bulk-process', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({dry_run: dryRun})
+    }).then(r=>r.json());
+    toast(`✅ Processed ${data.processed} invoices${dryRun ? ' (dry run)' : ''}`, 'success');
+    loadAll();
+    if (document.getElementById('page-invoices').classList.contains('active')) loadInvoices();
+  } catch(e) {
+    toast('❌ Bulk process failed', 'error');
+  }
+}
+
+// ── UPLOAD ────────────────────────────────────────────────────────────────────
+async function uploadCSV(input) {
+  const file = input.files[0];
+  if (!file) return;
+  const fd = new FormData();
+  fd.append('file', file);
+  const data = await fetch('/api/upload-csv', {method:'POST', body:fd}).then(r=>r.json());
+  toast(`✅ Added ${data.added} invoices from CSV`, 'success');
+  loadAll();
+}
+
+function downloadSampleCSV() {
+  const csv = `invoice_no,client_name,contact_email,amount,currency,due_date,follow_up_count,payment_link
+INV-SAMPLE-001,Sample Client,client@example.com,50000,INR,2025-04-15,0,https://pay.example.com/sample
+INV-SAMPLE-002,Another Corp,accounts@another.com,120000,INR,2025-04-01,1,https://pay.example.com/sample2`;
+  const a = document.createElement('a');
+  a.href = 'data:text/csv;charset=utf-8,' + encodeURIComponent(csv);
+  a.download = 'sample_invoices.csv';
+  a.click();
+}
+
+function exportAudit() {
+  window.open('/api/export-audit', '_blank');
+}
+
+// ── TOAST ─────────────────────────────────────────────────────────────────────
+function toast(msg, type='info') {
+  const t = document.createElement('div');
+  t.className = `toast ${type}`;
+  t.textContent = msg;
+  document.getElementById('toastContainer').appendChild(t);
+  setTimeout(()=>t.remove(), 3500);
+}
+
+// ── DRAG & DROP UPLOAD ────────────────────────────────────────────────────────
+const zone = document.getElementById('uploadZone');
+zone.addEventListener('dragover', e=>{e.preventDefault();zone.style.borderColor='var(--accent)'});
+zone.addEventListener('dragleave', ()=>zone.style.borderColor='');
+zone.addEventListener('drop', e=>{
+  e.preventDefault();zone.style.borderColor='';
+  const file = e.dataTransfer.files[0];
+  if (file?.name.endsWith('.csv')) {
+    const dt = new DataTransfer();dt.items.add(file);
+    document.getElementById('csvInput').files = dt.files;
+    uploadCSV(document.getElementById('csvInput'));
+  }
+});
+
+// ── INIT ──────────────────────────────────────────────────────────────────────
+loadAll();
+setInterval(loadAll, 60000);
+</script>
+</body>
+</html>
