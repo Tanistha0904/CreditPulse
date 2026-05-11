@@ -83,39 +83,7 @@ https://web-production-5cae3.up.railway.app/
 
 ---
 
-## Screenshots
 
-(Add screenshots here later)
-
----
-
-## Local Setup
-
-### Clone Repository
-
-```bash
-git clone https://github.com/Tanistha0904/CreditPulse.git
-```
-
-### Install Dependencies
-
-```bash
-pip install -r requirements.txt
-```
-
-### Run Project
-
-```bash
-python app.py
-```
-
----
-
-## Deployment
-
-Deployed on Railway.
-
----
 
 ## Author
 
