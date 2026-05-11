@@ -50,3 +50,73 @@ CreditPulse solves the manual pain of chasing overdue payments by:
 
 ---
 
+# CreditPulse AI
+
+AI-powered finance collections dashboard for tracking overdue invoices, payment risks, and automated follow-up email generation.
+
+## Live Demo
+
+https://web-production-5cae3.up.railway.app/
+
+---
+
+## Features
+
+- Invoice tracking dashboard
+- Payment risk analysis
+- AI-generated follow-up emails
+- Escalation workflow system
+- Audit logs
+- CSV upload support
+- Real-time finance metrics
+
+---
+
+## Tech Stack
+
+- Python
+- Flask
+- HTML/CSS
+- Anthropic Claude API
+- Railway
+- GitHub
+
+---
+
+## Screenshots
+
+(Add screenshots here later)
+
+---
+
+## Local Setup
+
+### Clone Repository
+
+```bash
+git clone https://github.com/Tanistha0904/CreditPulse.git
+```
+
+### Install Dependencies
+
+```bash
+pip install -r requirements.txt
+```
+
+### Run Project
+
+```bash
+python app.py
+```
+
+---
+
+## Deployment
+
+Deployed on Railway.
+
+---
+
+## Author
+
+Tanistha Keshri
